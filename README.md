@@ -1,9 +1,8 @@
 # Jenkins(Docker) + Docker Desktop Kubernetes 실습 환경
 
 이 폴더는 "Jenkins Push vs ArgoCD GitOps — 비교 실습형 Kubernetes CI/CD 교육"
-(7시간 과정)의 실습 파일입니다. 강의 교안(docx)의 "실습 파일 사용 가이드"에서
-Section별로 이 폴더의 어떤 파일을 언제 쓰는지 안내하니, 강의 진행 순서는 교안을
-기준으로 삼으세요. 이 README는 환경을 처음 설치·점검하는 방법만 다룹니다.
+(7시간 과정)의 실습 파일입니다. **Section 2~8을 처음부터 끝까지 따라하려면
+`EXERCISES.md`를 보세요.** 이 README는 환경을 처음 설치·점검하는 방법만 다룹니다.
 
 - **Kubernetes**: 별도 클러스터(Kind/Minikube) 대신 **Docker Desktop 내장 Kubernetes**를 사용합니다.
 - **Jenkins**: Kubernetes 위에 설치하지 않고 **Docker 컨테이너로 직접 실행**합니다.
@@ -98,6 +97,8 @@ Jenkins와 ArgoCD 두 배포를 모두 마쳤다면, `compare/README.md`를 따�
 | `Jenkinsfile` | 빌드→배포 파이프라인 (환경 선택 파라미터 포함) |
 | `argocd/` | (선택) ArgoCD 설치 스크립트 및 GitOps 데모 매니페스트 |
 | `compare/` | Push(Jenkins) vs Pull(ArgoCD) 나란히 비교 실습 가이드 |
+| `rollouts/` | Section 6 실습용 Argo Rollouts Canary 데모 매니페스트 |
+| `EXERCISES.md` | **Section 2~8 전체를 처음부터 끝까지 따라할 수 있는 step-by-step 가이드** |
 | `setup-mac.sh` / `setup-windows.ps1` | 환경 자동 준비 스크립트 |
 | `verify.sh` / `verify.ps1` | 연결 상태 점검 스크립트 |
 | `TROUBLESHOOTING.md` | 자주 발생하는 문제와 해결법 |
