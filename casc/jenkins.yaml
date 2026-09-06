@@ -1,0 +1,12 @@
+jenkins:
+  systemMessage: "Jenkins (Docker) — Docker Desktop Kubernetes 실습 환경"
+  numExecutors: 2
+  securityRealm:
+    local:
+      allowsSignup: false
+      users:
+        - id: "admin"
+          password: "${JENKINS_ADMIN_PASSWORD:-admin123!}"
+  authorizationStrategy:
+    loggedInUsersCanDoAnything:
+      allowAnonymousRead: false
