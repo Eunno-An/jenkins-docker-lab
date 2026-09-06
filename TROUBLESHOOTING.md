@@ -39,6 +39,33 @@ docker compose exec jenkins cat /var/jenkins_home/.kube/config | grep server
 이 실습 이미지는 root로 실행되도록 설계되어 있어 보통 발생하지 않습니다. 그래도 발생한다면
 Docker Desktop을 재시작하고 `docker compose up -d --build --force-recreate` 로 다시 실행하세요.
 
+## 4-1) Jenkins 파이프라인에서 "docker: not found" 오류
+Jenkins 컨테이너 안에 docker CLI 바이너리 자체가 없다는 뜻입니다 (소켓 권한 문제와는 다른 오류입니다).
+
+**즉시 확인:**
+```bash
+docker compose exec jenkins docker --version
+```
+이 명령이 실패한다면 이미지가 오래된 Dockerfile로 빌드되었거나, 빌드 중 설치가 실패한 것입니다.
+
+**임시 조치 (지금 당장 수업을 진행해야 할 때):**
+```bash
+docker compose exec -u root jenkins bash -c "apt-get update && apt-get install -y docker.io"
+docker compose exec jenkins docker --version
+```
+단, 이 방법은 컨테이너를 삭제(`docker compose down`)하면 다시 사라지는 임시 조치입니다.
+
+**영구 해결 (권장):**
+```bash
+docker compose down
+docker compose build --no-cache
+docker compose up -d
+bash verify.sh   # 또는 .\verify.ps1
+```
+최신 Dockerfile은 Debian 패키지(docker.io) 대신 Docker 공식 정적 바이너리를 직접 받아 설치하므로
+배포판·버전에 따라 패키지가 없어서 발생하는 문제 자체가 없어집니다. `--no-cache`로 반드시
+캐시 없이 새로 빌드해야 이전에 실패했던 레이어가 재사용되지 않습니다.
+
 ## 5) Jenkins 플러그인 설치 중 빌드가 느리거나 실패
 사내망/VPN에서 플러그인 저장소(updates.jenkins.io)가 막혀 있을 수 있습니다. 개인 네트워크나
 모바일 핫스팟에서 최초 빌드를 한 번 진행해보세요. 이후에는 `jenkins_home` 볼륨에 캐시되어
