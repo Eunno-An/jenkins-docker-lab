@@ -6,7 +6,7 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: https://github.com/joneconsulting/jenkins-docker-lab
+    repoURL: <YOUR_REPO_URL>
     targetRevision: main
     path: argocd/manifests
   destination:

@@ -18,21 +18,44 @@ docker compose exec jenkins cat /var/jenkins_home/.kube/config | grep server
 ```
 
 해결 순서 (위에서부터 시도):
-1. **VPN을 끄고** 다시 `bash verify.sh` (사내 VPN이 사설 DNS를 강제하는 경우가 많습니다)
+1. **VPN을 끄고** 다시 `bash verify.sh` / `.\verify.ps1` (사내 VPN이 사설 DNS를 강제하는 경우가 많습니다)
 2. Docker Desktop을 재시작 후 다시 시도
 3. 그래도 안 되면, 아래처럼 서버 주소를 `host.docker.internal`로 바꾼 별도 kubeconfig를 만들어 사용합니다.
-   (아래는 macOS/Linux 기준이며, Windows는 PowerShell로 유사하게 처리합니다.)
+
+   **macOS/Linux**
    ```bash
    mkdir -p .kubeconfig-container
    sed 's/kubernetes.docker.internal/host.docker.internal/' "$HOME/.kube/config" \
      > .kubeconfig-container/config
    ```
    그 다음 `.env` 파일의 `KUBE_CONFIG_PATH`를 `.kubeconfig-container/config` 의 절대경로로
-   바꾸고 `docker compose up -d --build` 를 다시 실행하세요.
+   바꾸고 `docker compose down && docker compose up -d` 를 다시 실행하세요.
+
+   **Windows (PowerShell)**
+   ```powershell
+   New-Item -ItemType Directory -Force -Path .kubeconfig-container | Out-Null
+   (Get-Content "$env:USERPROFILE\.kube\config") `
+     -replace 'kubernetes\.docker\.internal', 'host.docker.internal' |
+     Set-Content .kubeconfig-container\config
+
+   "KUBE_CONFIG_PATH=$((Resolve-Path .kubeconfig-container\config).Path)" |
+     Out-File -Encoding ascii -FilePath .env
+
+   docker compose down
+   docker compose up -d
+   ```
 4. 3번으로도 TLS 인증서 오류(`certificate is valid for ...`)가 나면, **로컬 실습에 한해서만**
    아래처럼 인증서 검증을 건너뛸 수 있습니다 (운영 환경에서는 절대 사용하지 마세요).
+
+   **macOS/Linux**
    ```bash
    kubectl --context docker-desktop config set-cluster docker-desktop --insecure-skip-tls-verify=true --kubeconfig=.kubeconfig-container/config
+   ```
+
+   **Windows (PowerShell)**
+   ```powershell
+   kubectl --context docker-desktop config set-cluster docker-desktop --insecure-skip-tls-verify=true --kubeconfig=.kubeconfig-container\config
+   docker compose restart jenkins
    ```
 
 ## 4) `docker build` 단계에서 권한 오류(permission denied on docker.sock)
@@ -82,3 +105,34 @@ kubectl --context docker-desktop describe pod <pod-이름> -n sample-app-dev
 ```
 `ImagePullBackOff`가 보이면 `docker build` 단계가 먼저 성공했는지, 이미지 태그가
 Jenkinsfile의 `${IMAGE}` 값과 일치하는지 확인하세요.
+
+## 8) CRD 설치 중 "annotations: Too long: may not be more than 262144 bytes"
+ArgoCD나 Argo Rollouts의 install.yaml을 일반 `kubectl apply`로 설치할 때 발생할 수
+있습니다. CRD 정의가 커서, `kubectl apply`가 기록하려는 "이전 설정 전체" 주석이
+Kubernetes의 256KB 제한을 넘기 때문입니다. `--server-side` 옵션을 추가해 재시도하세요.
+```bash
+kubectl --context docker-desktop apply --server-side -n argo-rollouts -f <install.yaml 주소>
+```
+이미 일반 apply로 일부가 생성된 상태라면 소유권 충돌이 날 수 있으니
+`--server-side --force-conflicts` 로 실행하세요. (이 zip의 `EXERCISES.md`와
+`argocd/install-argocd.sh`에는 이미 `--server-side`가 기본 반영되어 있습니다.)
+
+## 9) 이미지 빌드 중 "지원하지 않는 아키텍처" 오류
+Windows인데도 이 오류가 난다면, Docker Desktop/WSL2가 예상과 다른 아키텍처로 빌드를
+시도하고 있는 것입니다 (드물지만 ARM 기반 Windows 기기이거나, buildx 기본 빌더 설정이
+꼬여있는 경우 발생할 수 있습니다).
+
+**즉시 우회:**
+```powershell
+$env:DOCKER_DEFAULT_PLATFORM = "linux/amd64"
+docker compose build --no-cache
+docker compose up -d
+```
+
+**원인 확인:**
+```powershell
+docker version --format "OS/Arch: {{.Server.Os}}/{{.Server.Arch}}"
+docker run --rm jenkins/jenkins:lts dpkg --print-architecture
+```
+두 번째 명령 결과가 `amd64`나 `arm64`가 아닌 다른 값이라면 이 zip이 아니라 Docker
+Desktop 설치 자체를 점검해야 합니다 (재설치 권장).
