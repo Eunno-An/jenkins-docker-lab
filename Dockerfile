@@ -12,18 +12,22 @@ USER root
 ARG DOCKER_CLI_VERSION=27.3.1
 RUN apt-get update && \
     apt-get install -y --no-install-recommends curl ca-certificates && \
-    ARCH="$(dpkg --print-architecture)" && \
+    ARCH="$(dpkg --print-architecture | tr -d '[:space:]')" && \
+    echo "감지된 아키텍처(dpkg): '${ARCH}' / uname -m: '$(uname -m)'" && \
     case "$ARCH" in \
-      amd64) DARCH=x86_64 ;; \
-      arm64) DARCH=aarch64 ;; \
-      *) echo "지원하지 않는 아키텍처: $ARCH" >&2; exit 1 ;; \
+      amd64) DARCH=x86_64; KARCH=amd64 ;; \
+      arm64) DARCH=aarch64; KARCH=arm64 ;; \
+      x86_64) DARCH=x86_64; KARCH=amd64 ;; \
+      aarch64) DARCH=aarch64; KARCH=arm64 ;; \
+      *) echo "지원하지 않는 아키텍처: '${ARCH}' (uname -m: '$(uname -m)'). \
+이 로그를 그대로 캡처해서 문의해주세요." >&2; exit 1 ;; \
     esac && \
     curl -fsSL "https://download.docker.com/linux/static/stable/${DARCH}/docker-${DOCKER_CLI_VERSION}.tgz" -o /tmp/docker.tgz && \
     tar -xzf /tmp/docker.tgz -C /tmp && \
     install -o root -g root -m 0755 /tmp/docker/docker /usr/local/bin/docker && \
     rm -rf /tmp/docker /tmp/docker.tgz && \
     KUBECTL_VERSION=$(curl -L -s https://dl.k8s.io/release/stable.txt) && \
-    curl -fsSL -o /usr/local/bin/kubectl "https://dl.k8s.io/release/${KUBECTL_VERSION}/bin/linux/${ARCH}/kubectl" && \
+    curl -fsSL -o /usr/local/bin/kubectl "https://dl.k8s.io/release/${KUBECTL_VERSION}/bin/linux/${KARCH}/kubectl" && \
     chmod +x /usr/local/bin/kubectl && \
     rm -rf /var/lib/apt/lists/* && \
     docker --version && kubectl version --client
