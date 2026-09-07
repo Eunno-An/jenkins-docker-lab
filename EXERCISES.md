@@ -75,6 +75,8 @@ docker compose exec jenkins kubectl version --client
 ### 2-4. ArgoCD 설치 (같은 클러스터에)
 ```bash
 bash argocd/install-argocd.sh
+
+(Windows는 .\argocd¥install-argocd-windows.ps1)
 ```
 출력 마지막에 나오는 **초기 admin 비밀번호를 꼭 복사해두세요.** (예: `Ab12CdEf34...`)
 나중에 다시 확인하려면:
